@@ -16,7 +16,6 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //get user from frontend
   const { fullName, username, email, password } = req.body;
-  console.log("email", email);
 
   //validation - non empty, valid email, valid password
   if (
@@ -35,8 +34,15 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //check for images
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverLocalPath = req.files?.cover[0]?.path;
-
+  //const coverLocalPath = req.files?.cover[0]?.path;
+  let coverLocalPath;
+  if (
+    req.files &&
+    Array.isArray(req.files.cover) &&
+    req.files.cover.length > 0
+  ) {
+    coverLocalPath = req.files.cover[0].path;
+  }
   //if no avatar throw an error
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar is required");
@@ -58,12 +64,12 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     password,
     avatar: avatar.url,
-    cover: cover?.url || "",
+    coverImage: cover?.url || "",
   });
 
   //remove password and refresh token from response
   const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken "
   );
 
   //if user is not created throw an error
