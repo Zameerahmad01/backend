@@ -13,7 +13,7 @@ connectDB()
       console.log(`server is running on port ${process.env.PORT}`)
     )
   )
-  .catch((err) => console.error("MONGO db connection failed", error));
+  .catch((error) => console.error("MONGO db connection failed", error));
 
 // import express from "express";
 // const app = express()(async () => {
