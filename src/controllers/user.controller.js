@@ -355,6 +355,87 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Cover image updated successfully"));
 });
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  //get username from params
+  const { username } = req.params;
+
+  //if username is not present throw an error
+  if (!username?.trim()) {
+    throw new ApiError(400, "Username is missing");
+  }
+
+  //get user channel profile from database
+ const channel  await User.aggregate([
+    {
+      //match the username
+      $match:{
+        username: username.toLowerCase()
+      }
+    },
+    {
+      //lookup for subscribers
+      $lookup:{
+        from:"subscriptions",
+        localField:"_id",
+        foreignField:"channel",
+        as:"subscribers"
+      }
+    },
+    {
+      //lookup for subscribedTo
+      $lookup:{
+        from:"subscriptions",
+        localField:"_id",
+        foreignField:"subscriber",
+        as:"subscribedTo"
+      }
+    },
+    {
+      //add fields to the response
+      $addFields:{
+        subscribersCount:{
+          $size:"$subscribers"
+        },
+        channelSubscribedToCount:{
+          $size:"$subscribedTo"
+        },
+        isSubscribed: {
+          $cond:{
+            if:{
+              //check if the user is subscribed to the channel if the is logged in check user subscribed or not by checking the subscriber id in the subscribers array
+              $in:[req.user._id, "$subscribers.subscriber"]
+            }
+            then:true,
+            else:false
+          }
+        },
+      },
+    },
+    {
+      $project:{
+        fullName:1,
+        username:1,
+        subscribersCount:1,
+        channelSubscribedToCount:1,
+        isSubscribed:1,
+        avatar:1,
+        coverImage:1,
+        email:1,
+      }
+    }
+  ])
+
+  //if channel is not found throw an error
+  if(!channel?.length){
+    throw new ApiError(404, "Channel does not exist");
+  }
+
+  //send response to frontend
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], " User Channel profile fetched successfully"));
+})
+
 export {
   registerUser,
   loginUser,
@@ -365,4 +446,5 @@ export {
   updateAccountDetails,
   updateAvatar,
   updateCoverImage,
+  getUserChannelProfile,
 };
