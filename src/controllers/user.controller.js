@@ -286,18 +286,23 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateAvatar = asyncHandler(async (req, res) => {
+  //check for avatar
   const avatarLocalPath = req.file?.path;
 
+  //if avatar is not present throw an error
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar is required");
   }
 
+  //upload avatar to cloudinary
   const avatar = await uploadOnCloudinary(avatarLocalPath);
 
+  //if avatar is not uploaded throw an error
   if (!avatar.url) {
     throw new ApiError(500, "Failed to upload avatar");
   }
 
+  //update avatar in database
   const user = await User.findByIdAndUpdate(
     req.user._id,
     {
@@ -308,24 +313,32 @@ const updateAvatar = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password ");
 
+  //send response to frontend
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Avatar updated successfully"));
+
+  //todo: delete the old avatar from cloudinary
 });
 
 const updateCoverImage = asyncHandler(async (req, res) => {
+  //check for cover image
   const coverLocalPath = req.file?.path;
 
+  //if cover image is not present throw an error
   if (!coverLocalPath) {
     throw new ApiError(400, "Cover image is required");
   }
 
+  //upload cover image to cloudinary
   const cover = await uploadOnCloudinary(coverLocalPath);
 
+  //if cover image is not uploaded throw an error
   if (!cover.url) {
     throw new ApiError(500, "Failed to upload cover image");
   }
 
+  //update cover image in database
   const user = await User.findByIdAndUpdate(
     req.user._id,
     {
@@ -336,6 +349,7 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password ");
 
+  //send response to frontend
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Cover image updated successfully"));
