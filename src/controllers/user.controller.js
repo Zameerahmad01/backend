@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const generateAccessTokenAndRefreshToken = async (userId) => {
   try {
@@ -162,8 +163,8 @@ const logOutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1, //1 is for remove the field from the database
       },
     },
     { new: true }
@@ -192,7 +193,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
   try {
     //verify refresh token
-    const decoded = jwt.verify(incomingRefreshToken, process.env.JWT_SECRET);
+    const decoded = jwt.verify(
+      incomingRefreshToken,
+      process.env.ACCESS_TOKEN_SECRET
+    );
     const user = await User.findById(decoded._id);
 
     //if user is not found throw an error
