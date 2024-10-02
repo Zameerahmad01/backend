@@ -13,16 +13,19 @@ const getAllVideos = asyncHandler(async (req, res) => {
 });
 
 const uploadVideo = asyncHandler(async (req, res) => {
+  // get title, description, videoFile, thumbnail from req.body
   const { title, description } = req.body;
-  // TODO: get video, upload to cloudinary, create video
 
+  // validate title and description
   if (!title || !description) {
     throw new ApiError(400, "Title and description are required");
   }
 
+  // get videoFile and thumbnail from req.files
   const videoLocalPath = req.files?.videoFile[0]?.path;
   const thumbnailLocalPath = req.files?.thumbnail[0]?.path;
 
+  // validate videoFile and thumbnail
   if (!videoLocalPath || !thumbnailLocalPath) {
     throw new ApiError(400, "Video file and thumbnail are required");
   }
@@ -37,6 +40,7 @@ const uploadVideo = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to upload video or thumbnail");
   }
 
+  // create video in database
   const newVideo = await Video.create({
     videofile: videoFile.url,
     thumbnail: thumbnail.url,
@@ -54,13 +58,22 @@ const uploadVideo = asyncHandler(async (req, res) => {
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
+  // get videoId from req.params
   const { videoId } = req.params;
-  //TODO: get video by id
 
+  // validate videoId
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
+  // get video by id from database
   const video = await Video.findById(videoId);
   if (!video) {
     throw new ApiError(404, "Video not found");
   }
+
+  // update views count
+  await Video.findByIdAndUpdate(videoId, { $inc: { views: 1 } });
 
   res
     .status(200)
@@ -122,7 +135,35 @@ const deleteVideo = asyncHandler(async (req, res) => {
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
+  // get videoId from req.params
   const { videoId } = req.params;
+
+  // validate videoId
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
+  // get video by id from database
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  // update published status
+  const updatedVideo = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      $set: {
+        published: !video.published,
+      },
+    },
+    { new: true }
+  );
+
+  // send response
+  res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, "Video published status updated"));
 });
 
 export {
